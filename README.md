@@ -149,8 +149,6 @@ Run the complete test suite with:
 python -m unittest discover -s tests -v
 ```
 
-GitHub also runs the tests automatically on supported Python versions whenever code is pushed or a pull request is opened.
-
 ## Important limitation
 
 A motif match only means that part of a sequence resembles a supplied binding pattern. It does not prove transcription-factor binding or biological activity.
