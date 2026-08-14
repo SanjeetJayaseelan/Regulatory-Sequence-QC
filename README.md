@@ -41,7 +41,7 @@ For real project files, the command will look like this:
 
 ```bash
 regulatory-qc \
-  --input generated_sequences.fasta \
+  --input generated_sequences.jsonl \
   --motifs validated_motifs.json \
   --training training_sequences.fasta \
   --output results.json
@@ -51,7 +51,7 @@ The training file and motif file are optional. Without them, the pipeline still 
 
 ## Sequence input
 
-The pipeline accepts FASTA, CSV, and JSON files.
+The pipeline accepts FASTA, CSV, JSON, and JSON Lines (`.jsonl`) files.
 
 FASTA headers can include condition and model information:
 
@@ -78,6 +78,15 @@ A JSON file can contain a list of records:
   }
 ]
 ```
+
+A JSONL file contains one JSON object per line. The `id` field is optional:
+
+```json
+{"sequence":"ACGTACGTACGT","condition":"GATA6","model_probability":0.82}
+{"id":"candidate_002","sequence":"TGCATGCATGCA","condition":"GATA6"}
+```
+
+When a JSONL record has no ID or a blank ID, the pipeline assigns one from the filename and record number. For example, the first record in `generated_1786679491.jsonl` becomes `generated_1786679491_000001`. Other fields are preserved as metadata in the final report.
 
 The current condition labels are:
 
