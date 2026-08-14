@@ -1,3 +1,0 @@
-Synthetic Git history experiment
-Step: 29 of 30
-Purpose: Test timestamp display and branch history.
