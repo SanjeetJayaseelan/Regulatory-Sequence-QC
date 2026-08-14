@@ -1,0 +1,27 @@
+[
+  {
+    "id": "TF_A",
+    "name": "Example target motif",
+    "matrix_type": "probabilities",
+    "matrix": [
+      [0.90, 0.03, 0.03, 0.04],
+      [0.05, 0.80, 0.10, 0.05],
+      [0.05, 0.10, 0.80, 0.05],
+      [0.04, 0.03, 0.03, 0.90]
+    ],
+    "threshold": 0.80,
+    "role": "target"
+  },
+  {
+    "id": "UNWANTED_A",
+    "name": "Example unwanted motif",
+    "matrix_type": "probabilities",
+    "matrix": [
+      [0.90, 0.03, 0.03, 0.04],
+      [0.90, 0.03, 0.03, 0.04],
+      [0.90, 0.03, 0.03, 0.04]
+    ],
+    "threshold": 0.80,
+    "role": "unwanted"
+  }
+]

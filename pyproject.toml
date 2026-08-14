@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "regulatory-sequence-qc"
+version = "0.1.0"
+description = "Quality control and transparent scoring for generated regulatory DNA sequences"
+requires-python = ">=3.10"
+
+[project.scripts]
+regulatory-qc = "regulatory_qc.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["regulatory_qc*"]
