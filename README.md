@@ -85,8 +85,8 @@ A motif can have one of three roles:
 
 The `conditions` and `unwanted_conditions` fields control how the pipeline treats a motif for each candidate label.
 
-## Output
-
+** Output
+**
 The pipeline writes one JSON report. The report includes:
 
 - Pass or fail status
@@ -97,16 +97,16 @@ The pipeline writes one JSON report. The report includes:
 - Score components
 - A plain explanation of the final score
 
-## Tests
-
+** Tests
+**
 Run the full test suite with:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-## Important limitation
-
+** Important limitation
+**
 A motif match only means that a DNA section resembles a known binding pattern. It does not prove binding or biological activity.
 
 This pipeline is a quality-control and ranking tool. Laboratory experiments and validated activity models are still necessary for biological conclusions.
