@@ -69,6 +69,45 @@ class MotifTests(unittest.TestCase):
         self.assertEqual(motif.unwanted_conditions, ("PTF1A_NEGATIVE",))
         self.assertEqual(motif.metadata["database"], "JASPAR")
 
+    def test_rejects_non_finite_matrix_values(self):
+        with self.assertRaisesRegex(ValueError, "finite"):
+            MotifSpec(id="bad", matrix=((float("nan"), 0.0, 0.0, 1.0),))
+
+    def test_rejects_negative_matrix_values(self):
+        with self.assertRaisesRegex(ValueError, "non-negative"):
+            MotifSpec(id="bad", matrix=((-1.0, 1.0, 1.0, 1.0),))
+
+    def test_rejects_non_finite_pseudocount(self):
+        with self.assertRaisesRegex(ValueError, "pseudocount must be finite"):
+            MotifSpec(
+                id="bad",
+                matrix=((1.0, 1.0, 1.0, 1.0),),
+                matrix_type="counts",
+                pseudocount=float("nan"),
+            )
+
+    def test_rejects_negative_pseudocount(self):
+        with self.assertRaisesRegex(ValueError, "pseudocount must be non-negative"):
+            MotifSpec(
+                id="bad",
+                matrix=((1.0, 1.0, 1.0, 1.0),),
+                matrix_type="counts",
+                pseudocount=-0.1,
+            )
+
+    def test_rejects_probability_rows_without_weight(self):
+        with self.assertRaisesRegex(ValueError, "positive total"):
+            MotifSpec(id="bad", matrix=((0.0, 0.0, 0.0, 0.0),))
+
+    def test_rejects_count_rows_without_weight_or_pseudocount(self):
+        with self.assertRaisesRegex(ValueError, "positive total"):
+            MotifSpec(
+                id="bad",
+                matrix=((0.0, 0.0, 0.0, 0.0),),
+                matrix_type="counts",
+                pseudocount=0.0,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

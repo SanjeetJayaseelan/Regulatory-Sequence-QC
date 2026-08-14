@@ -31,25 +31,31 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    config = QCConfig(
-        min_length=args.min_length,
-        max_length=args.max_length,
-        min_gc=args.min_gc,
-        max_gc=args.max_gc,
-        max_homopolymer=args.max_homopolymer,
-        repeat_k=args.repeat_k,
-        max_repeat_count=args.max_repeat_count,
-        max_repeat_fraction=args.max_repeat_fraction,
-        min_complexity=args.min_complexity,
-        duplicate_similarity=args.duplicate_similarity,
-    )
-    candidates = load_sequences(args.input)
-    training = load_sequences(args.training) if args.training else []
-    motifs = load_motifs(args.motifs) if args.motifs else []
-    results, _ = run_qc(candidates, motifs=motifs, training_records=training, config=config)
-    report = result_to_report(results, config, len(motifs))
-    write_report(args.output, report)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        config = QCConfig(
+            min_length=args.min_length,
+            max_length=args.max_length,
+            min_gc=args.min_gc,
+            max_gc=args.max_gc,
+            max_homopolymer=args.max_homopolymer,
+            repeat_k=args.repeat_k,
+            max_repeat_count=args.max_repeat_count,
+            max_repeat_fraction=args.max_repeat_fraction,
+            min_complexity=args.min_complexity,
+            duplicate_similarity=args.duplicate_similarity,
+        )
+        candidates = load_sequences(args.input)
+        if not candidates:
+            raise ValueError("Candidate input contains no sequences")
+        training = load_sequences(args.training) if args.training else []
+        motifs = load_motifs(args.motifs) if args.motifs else []
+        results, _ = run_qc(candidates, motifs=motifs, training_records=training, config=config)
+        report = result_to_report(results, config, len(motifs))
+        write_report(args.output, report)
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
     print(json.dumps(report["summary"], indent=2))
     return 0
 

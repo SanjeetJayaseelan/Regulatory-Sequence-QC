@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
@@ -36,10 +37,25 @@ class MotifSpec:
     def __post_init__(self) -> None:
         if not self.matrix or any(len(row) != 4 for row in self.matrix):
             raise ValueError(f"Motif {self.id!r} must have non-empty four-column rows")
-        if not 0 <= self.threshold <= 1:
-            raise ValueError(f"Motif {self.id!r} threshold must be between 0 and 1")
         if self.matrix_type not in {"probabilities", "counts"}:
             raise ValueError("matrix_type must be probabilities or counts")
+        values = [value for row in self.matrix for value in row]
+        if any(not math.isfinite(value) for value in values):
+            raise ValueError(f"Motif {self.id!r} matrix values must be finite")
+        if any(value < 0 for value in values):
+            raise ValueError(f"Motif {self.id!r} matrix values must be non-negative")
+        if self.matrix_type == "probabilities" and any(sum(row) <= 0 for row in self.matrix):
+            raise ValueError(f"Motif {self.id!r} probability rows must have a positive total")
+        if not math.isfinite(self.pseudocount):
+            raise ValueError(f"Motif {self.id!r} pseudocount must be finite")
+        if self.pseudocount < 0:
+            raise ValueError(f"Motif {self.id!r} pseudocount must be non-negative")
+        if self.matrix_type == "counts" and any(
+            sum(row) + 4 * self.pseudocount <= 0 for row in self.matrix
+        ):
+            raise ValueError(f"Motif {self.id!r} count rows must have a positive total")
+        if not 0 <= self.threshold <= 1:
+            raise ValueError(f"Motif {self.id!r} threshold must be between 0 and 1")
         if self.role not in {"target", "unwanted", "neutral"}:
             raise ValueError("role must be target, unwanted, or neutral")
 
@@ -113,10 +129,27 @@ class QCConfig:
             raise ValueError("GC thresholds must satisfy 0 <= min_gc <= max_gc <= 1")
         if self.max_homopolymer < 1 or self.repeat_k < 1 or self.max_repeat_count < 1:
             raise ValueError("Repeat and homopolymer settings must be positive")
+        if self.complexity_k < 1:
+            raise ValueError("complexity_k must be positive")
+        if self.motif_scan_step < 1:
+            raise ValueError("motif_scan_step must be positive")
         if not 0 <= self.max_repeat_fraction <= 1 or not 0 <= self.min_complexity <= 1:
             raise ValueError("Fraction and complexity thresholds must be between 0 and 1")
         if not 0 <= self.duplicate_similarity <= 1:
             raise ValueError("duplicate_similarity must be between 0 and 1")
+        if any(not math.isfinite(value) for value in self.score_weights.values()):
+            raise ValueError("Score weights must be finite")
+        known_weights = {
+            "target_motif_strength",
+            "appropriate_motif_count",
+            "sequence_complexity",
+            "diversity",
+            "composition",
+            "training_similarity",
+        }
+        unknown_weights = sorted(set(self.score_weights) - known_weights)
+        if unknown_weights:
+            raise ValueError(f"Unknown score weight component(s): {', '.join(unknown_weights)}")
         if any(value < 0 for value in self.score_weights.values()) or sum(self.score_weights.values()) <= 0:
             raise ValueError("Score weights must be non-negative and have positive total")
 
