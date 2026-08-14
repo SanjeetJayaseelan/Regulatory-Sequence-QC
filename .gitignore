@@ -6,3 +6,9 @@ venv/
 tmp/
 outputs/
 results*.json
+build/
+dist/
+*.egg-info/
+.coverage
+htmlcov/
+.pytest_cache/

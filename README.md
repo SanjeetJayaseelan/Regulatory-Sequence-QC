@@ -1,41 +1,35 @@
 # Regulatory Sequence QC
 
-I built this project to check generated regulatory DNA sequences before they move into later analysis.
+This project checks generated regulatory DNA sequences before they move into later analysis. It applies the same quality-control rules to every candidate and produces a JSON report with measurements, warnings, blocking errors, motif matches, similarity results, and a score from 0 to 100.
 
+## What the pipeline checks
 
-**What the pipeline checks
-**
-For each sequence, the pipeline checks:
-
-- The sequence length
-- Invalid DNA letters
-- The percentage of G and C bases
-- Long runs of the same base
-- Repeated DNA patterns
+- Sequence length and invalid DNA letters
+- GC content
+- Long homopolymers
+- Repeated DNA patterns and low complexity
 - Exact and near-duplicate sequences
-- Similarity to the training sequences
+- Similarity to a supplied training set
 - Transcription-factor motif matches on both DNA strands
 
-The pipeline also gives each candidate a score from 0 to 100. The report explains each part of that score.
+## Requirements and installation
 
-** Running the pipeline
-**
-Use Python 3.10 or a newer version.
+Use Python 3.10 or newer.
 
 ```bash
-python -m regulatory_qc.cli \
-  --input candidates.fasta \
-  --motifs examples/motifs.json \
-  --training training.fasta \
-  --output results.json
+git clone https://github.com/SanjeetJayaseelan/Regulatory-Sequence-QC.git
+cd Regulatory-Sequence-QC
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install .
 ```
 
-The default candidate length is 200 to 500 base pairs. You can change the limits with command-line options.
+## Try the included example
 
-The example sequences are shorter than real candidates. Use this command for the example files:
+The example sequences are intentionally shorter than real candidates, so this command changes the length limits:
 
 ```bash
-python -m regulatory_qc.cli \
+regulatory-qc \
   --input examples/candidates.fasta \
   --motifs examples/motifs.json \
   --output results.json \
@@ -43,27 +37,46 @@ python -m regulatory_qc.cli \
   --max-length 20
 ```
 
-**Sequence input
-**
+For real project files, the command will look like this:
+
+```bash
+regulatory-qc \
+  --input generated_sequences.fasta \
+  --motifs validated_motifs.json \
+  --training training_sequences.fasta \
+  --output results.json
+```
+
+The training file and motif file are optional. Without them, the pipeline still performs the sequence-level checks.
+
+## Sequence input
+
 The pipeline accepts FASTA, CSV, and JSON files.
 
-A CSV file must contain `id` and `sequence` columns. It can also contain a `condition` column.
+FASTA headers can include condition and model information:
+
+```text
+>candidate_001|condition=GATA6|model=conditional
+ACGTACGTACGT
+```
+
+A CSV file must contain `id` and `sequence` columns. The `condition` column is optional:
+
+```csv
+id,sequence,condition
+candidate_001,ACGTACGTACGT,GATA6
+```
+
+A JSON file can contain a list of records:
 
 ```json
 [
   {
     "id": "candidate_001",
-    "sequence": "ACGT...",
+    "sequence": "ACGTACGTACGT",
     "condition": "GATA6"
   }
 ]
-```
-
-A FASTA header can include the condition and model information:
-
-```text
->candidate_001|condition=GATA6|model=conditional
-ACGT...
 ```
 
 The current condition labels are:
@@ -73,21 +86,52 @@ The current condition labels are:
 - `GATA6`
 - `PTF1A_NEGATIVE`
 
-**Motif input
-**
-The motif file tells the pipeline which DNA patterns to find. Each matrix uses position rows with A, C, G, and T columns.
+## Motif input
+
+The motif file is JSON. Each position-weight matrix uses one row per DNA position and four columns in A, C, G, T order.
+
+```json
+[
+  {
+    "id": "GATA6_example",
+    "name": "Example GATA6 target motif",
+    "matrix_type": "probabilities",
+    "matrix": [
+      [0.90, 0.03, 0.03, 0.04],
+      [0.05, 0.80, 0.10, 0.05]
+    ],
+    "threshold": 0.80,
+    "role": "target",
+    "conditions": ["GATA6"]
+  }
+]
+```
 
 A motif can have one of three roles:
 
-- `target`: The condition is expected to contain this motif.
-- `unwanted`: The motif receives a score penalty.
-- `neutral`: The pipeline reports the motif but does not change the score.
+- `target`: expected for the candidate's condition
+- `unwanted`: reported with a score penalty
+- `neutral`: reported without changing the score
 
-The `conditions` and `unwanted_conditions` fields control how the pipeline treats a motif for each candidate label.
+The `conditions` and `unwanted_conditions` fields control how a motif is interpreted for each candidate label. See [examples/motifs.json](examples/motifs.json) for a complete example.
 
-** Output
-**
-The pipeline writes one JSON report. The report includes:
+## Current default thresholds
+
+The software currently uses:
+
+- Length: 200–500 base pairs
+- GC content: 30%–70%
+- Maximum homopolymer: 8 bases
+- Repeat size: 8 bases
+- Maximum repeat count: 3
+- Maximum repeated fraction: 35%
+- Near-duplicate similarity: 95%
+
+These are software defaults, not final biological claims. Replace them with the team's approved thresholds when those values are finalized.
+
+## Output
+
+The pipeline writes one JSON report containing:
 
 - Pass or fail status
 - Sequence measurements
@@ -95,18 +139,20 @@ The pipeline writes one JSON report. The report includes:
 - Motif locations and scores
 - Similar sequences
 - Score components
-- A plain explanation of the final score
+- A plain-language explanation of the final score
 
-** Tests
-**
-Run the full test suite with:
+## Tests
+
+Run the complete test suite with:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-** Important limitation
-**
-A motif match only means that a DNA section resembles a known binding pattern. It does not prove binding or biological activity.
+GitHub also runs the tests automatically on supported Python versions whenever code is pushed or a pull request is opened.
 
-This pipeline is a quality-control and ranking tool. Laboratory experiments and validated activity models are still necessary for biological conclusions.
+## Important limitation
+
+A motif match only means that part of a sequence resembles a supplied binding pattern. It does not prove transcription-factor binding or biological activity.
+
+This pipeline is a quality-control and ranking tool. Final conclusions still require validated motif data, approved thresholds, appropriate reference sequences, and laboratory testing.
