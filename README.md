@@ -2,10 +2,9 @@
 
 I built this project to check generated regulatory DNA sequences before they move into later analysis.
 
-The main goal is consistency. Every candidate receives the same checks, score, and explanation. This makes it easier to compare sequences and find obvious problems early.
 
-## What the pipeline checks
-
+**What the pipeline checks
+**
 For each sequence, the pipeline checks:
 
 - The sequence length
@@ -19,8 +18,8 @@ For each sequence, the pipeline checks:
 
 The pipeline also gives each candidate a score from 0 to 100. The report explains each part of that score.
 
-## Running the pipeline
-
+** Running the pipeline
+**
 Use Python 3.10 or a newer version.
 
 ```bash
@@ -44,8 +43,8 @@ python -m regulatory_qc.cli \
   --max-length 20
 ```
 
-## Sequence input
-
+**Sequence input
+**
 The pipeline accepts FASTA, CSV, and JSON files.
 
 A CSV file must contain `id` and `sequence` columns. It can also contain a `condition` column.
@@ -74,8 +73,8 @@ The current condition labels are:
 - `GATA6`
 - `PTF1A_NEGATIVE`
 
-## Motif input
-
+**Motif input
+**
 The motif file tells the pipeline which DNA patterns to find. Each matrix uses position rows with A, C, G, and T columns.
 
 A motif can have one of three roles:
