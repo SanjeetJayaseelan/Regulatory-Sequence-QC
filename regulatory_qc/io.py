@@ -1,4 +1,4 @@
-"""FASTA, CSV, and JSON input plus JSON report output."""
+"""FASTA, CSV, JSON, and JSONL input plus JSON report output."""
 
 from __future__ import annotations
 
@@ -18,6 +18,8 @@ def load_sequences(path: str | Path) -> list[SequenceRecord]:
         return _load_csv(path)
     if path.suffix.lower() == ".json":
         return _load_json(path)
+    if path.suffix.lower() == ".jsonl":
+        return _load_jsonl(path)
     raise ValueError(f"Unsupported sequence input type: {path.suffix}")
 
 
@@ -117,6 +119,36 @@ def _load_json(path: Path) -> list[SequenceRecord]:
             raise ValueError("JSON sequence record is missing a sequence")
         records.append(SequenceRecord(
             str(item["id"]),
+            str(item["sequence"]),
+            {key: value for key, value in item.items() if key not in {"id", "sequence"}},
+        ))
+    return records
+
+
+def _load_jsonl(path: Path) -> list[SequenceRecord]:
+    records: list[SequenceRecord] = []
+    record_number = 0
+    for line_number, line in enumerate(path.read_text().splitlines(), start=1):
+        line = line.strip()
+        if not line:
+            continue
+        record_number += 1
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise ValueError(
+                f"JSONL line {line_number} contains invalid JSON: {error.msg}"
+            ) from error
+        if not isinstance(item, dict):
+            raise ValueError(f"JSONL line {line_number} must contain an object")
+        if "sequence" not in item or item["sequence"] is None:
+            raise ValueError(f"JSONL line {line_number} is missing a sequence")
+        raw_id = item.get("id")
+        record_id = str(raw_id).strip() if raw_id is not None else ""
+        if not record_id:
+            record_id = f"{path.stem}_{record_number:06d}"
+        records.append(SequenceRecord(
+            record_id,
             str(item["sequence"]),
             {key: value for key, value in item.items() if key not in {"id", "sequence"}},
         ))
