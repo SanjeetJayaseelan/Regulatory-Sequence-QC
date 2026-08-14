@@ -52,7 +52,10 @@ def _load_fasta(path: Path) -> list[SequenceRecord]:
         if line.startswith(">"):
             if current_id is not None:
                 records.append(SequenceRecord(current_id, "".join(chunks), current_metadata))
-            header_token = line[1:].strip().split()[0]
+            header = line[1:].strip()
+            if not header:
+                raise ValueError(f"FASTA header on line {line_number} has no ID")
+            header_token = header.split()[0]
             parts = header_token.split("|")
             current_id = parts[0]
             if not current_id:
@@ -78,10 +81,23 @@ def _load_csv(path: Path) -> list[SequenceRecord]:
         reader = csv.DictReader(handle)
         if not reader.fieldnames or "id" not in reader.fieldnames or "sequence" not in reader.fieldnames:
             raise ValueError("CSV input requires id and sequence columns")
-        return [
-            SequenceRecord(row["id"], row["sequence"], {key: value for key, value in row.items() if key not in {"id", "sequence"}})
-            for row in reader
-        ]
+        records: list[SequenceRecord] = []
+        for row_number, row in enumerate(reader, start=2):
+            if row.get(None):
+                raise ValueError(f"CSV row {row_number} contains an extra value")
+            record_id = row.get("id")
+            sequence = row.get("sequence")
+            if record_id is None or not record_id.strip():
+                raise ValueError(f"CSV row {row_number} is missing an ID")
+            if sequence is None:
+                raise ValueError(f"CSV row {row_number} is missing a sequence")
+            metadata = {
+                key: value
+                for key, value in row.items()
+                if key is not None and key not in {"id", "sequence"}
+            }
+            records.append(SequenceRecord(record_id, sequence, metadata))
+        return records
 
 
 def _load_json(path: Path) -> list[SequenceRecord]:
@@ -97,6 +113,8 @@ def _load_json(path: Path) -> list[SequenceRecord]:
     for item in payload:
         if not isinstance(item, dict) or "id" not in item or "sequence" not in item:
             raise ValueError("Each JSON sequence record requires id and sequence")
+        if item["sequence"] is None:
+            raise ValueError("JSON sequence record is missing a sequence")
         records.append(SequenceRecord(
             str(item["id"]),
             str(item["sequence"]),
